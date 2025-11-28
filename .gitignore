@@ -1,0 +1,30 @@
+# NuGet/Package Manager Files
+packages/
+*.nupkg
+
+# The rest of your Visual Studio ignores...
+.vs/
+*.sln
+# ...
+
+# Visual Studio files
+.vs/
+*.sln
+*.suo
+*.user
+*.ncb
+*.aps
+*.pdb
+*.obj
+*.exe
+*.dll
+*.lib
+
+# Folders created by the build process
+[Dd]ebug/
+[Rr]elease/
+[B]in/
+[I]nt/
+*.vcxproj
+*.filters
+*.user
