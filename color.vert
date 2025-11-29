@@ -1,13 +1,16 @@
 #version 330 core
 
-layout(location = 0) in vec2 inPos;
-layout(location = 1) in vec4 inCol;
-out vec4 chCol;
+layout (location = 0) in vec2 aPos;
 
-uniform vec2 uPos;
+uniform float positionX;
+uniform float positionY;
+uniform float width;
+uniform float height;
 
 void main()
 {
-    gl_Position = vec4(inPos.x + uPos.x, inPos.y + uPos.y, 0.0, 1.0);
-    chCol = inCol;
+    // aPos je u opsegu [-1, 1].
+    // Skaliranje (width, height) i translacija (positionX, positionY)
+    vec2 pos = aPos * vec2(width, height) + vec2(positionX, positionY);
+    gl_Position = vec4(pos, 0.0, 1.0);
 }
