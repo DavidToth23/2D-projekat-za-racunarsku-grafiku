@@ -113,6 +113,16 @@ unsigned loadImageToTexture(const char* filePath) {
         glGenTextures(1, &Texture);
         glBindTexture(GL_TEXTURE_2D, Texture);
         glTexImage2D(GL_TEXTURE_2D, 0, InternalFormat, TextureWidth, TextureHeight, 0, InternalFormat, GL_UNSIGNED_BYTE, ImageData);
+        
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+
+        // Na Y-osi (V) neka stoji fiksirana, CLAMP_TO_EDGE je dobra opcija
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        // Filtriranje - Dobro je dodati i ovo
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
         glBindTexture(GL_TEXTURE_2D, 0);
         // oslobadjanje memorije zauzete sa stbi_load posto vise nije potrebna
         stbi_image_free(ImageData);

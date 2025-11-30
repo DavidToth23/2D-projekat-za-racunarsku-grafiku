@@ -47,6 +47,8 @@ void initQuad() {
 void drawQuad(float x, float y, float width, float height, float r, float g, float b, float a) {
     glUseProgram(colorShader);
 
+    glUniform1i(glGetUniformLocation(colorShader, "useTexture"), 0);
+
     int locX = glGetUniformLocation(colorShader, "positionX");
     int locY = glGetUniformLocation(colorShader, "positionY");
     int locW = glGetUniformLocation(colorShader, "width");
@@ -62,6 +64,9 @@ void drawQuad(float x, float y, float width, float height, float r, float g, flo
     int locShape = glGetUniformLocation(colorShader, "drawShape");
     glUniform1i(locShape, 0); // Kvadrat (drawShape=0)
 
+    glUniform1f(glGetUniformLocation(colorShader, "u_scroll"), 0.0f);
+    glUniform1f(glGetUniformLocation(colorShader, "u_repeat"), 1.0f);
+
     glBindVertexArray(quadVAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
@@ -69,6 +74,8 @@ void drawQuad(float x, float y, float width, float height, float r, float g, flo
 
 void drawTriangleRight(float x, float y, float width, float height, float r, float g, float b, float a) {
     glUseProgram(colorShader);
+
+    glUniform1i(glGetUniformLocation(colorShader, "useTexture"), 0);
 
     int locX = glGetUniformLocation(colorShader, "positionX");
     int locY = glGetUniformLocation(colorShader, "positionY");
@@ -94,6 +101,8 @@ void drawTriangleRight(float x, float y, float width, float height, float r, flo
 void drawTriangleLeft(float x, float y, float width, float height, float r, float g, float b, float a) {
     glUseProgram(colorShader);
 
+    glUniform1i(glGetUniformLocation(colorShader, "useTexture"), 0);
+
     int locX = glGetUniformLocation(colorShader, "positionX");
     int locY = glGetUniformLocation(colorShader, "positionY");
     int locW = glGetUniformLocation(colorShader, "width");
@@ -113,6 +122,49 @@ void drawTriangleLeft(float x, float y, float width, float height, float r, floa
     glDrawArrays(GL_TRIANGLES, 0, 3);
     glUniform1i(locShape, 0);
     glBindVertexArray(0);
+}
+
+void drawTexturedQuad(float x, float y, float width, float height, unsigned int textureID, float u_scroll, float u_repeat) {
+    glUseProgram(colorShader);
+
+    // ⭐ Omogući teksturu
+    glUniform1i(glGetUniformLocation(colorShader, "useTexture"), 1);
+
+    // Uniformi za Poziciju/Veličinu
+    int locX = glGetUniformLocation(colorShader, "positionX");
+    int locY = glGetUniformLocation(colorShader, "positionY");
+    int locW = glGetUniformLocation(colorShader, "width");
+    int locH = glGetUniformLocation(colorShader, "height");
+    int locC = glGetUniformLocation(colorShader, "color");
+    int locShape = glGetUniformLocation(colorShader, "drawShape");
+
+    glUniform1f(locX, x);
+    glUniform1f(locY, y);
+    glUniform1f(locW, width);
+    glUniform1f(locH, height);
+
+    // Crvena boja za EKG (A=1.0)
+    glUniform4f(locC, 1.0f, 0.0f, 0.0f, 1.0f);
+
+    glUniform1i(locShape, 0); // Uvek kvadrat za teksturu
+
+    // Uniformi za Skrolovanje/Ponavljanje
+    glUniform1f(glGetUniformLocation(colorShader, "u_scroll"), u_scroll);
+    glUniform1f(glGetUniformLocation(colorShader, "u_repeat"), u_repeat);
+
+    // Vezivanje teksture
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glUniform1i(glGetUniformLocation(colorShader, "textureSampler"), 0);
+
+    // Crtanje
+    glBindVertexArray(quadVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
+
+    // Čišćenje stanja (opciono, ali dobra praksa)
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glUniform1i(glGetUniformLocation(colorShader, "useTexture"), 0);
 }
 
 void drawWatchFrame() {

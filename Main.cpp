@@ -73,6 +73,16 @@ unsigned int quadVAO = 0;
 unsigned int quadVBO = 0;
 ScreenState currentScreen = TIME_SCREEN;
 
+// === NOVE VARIJABLE ZA HEART RATE SCREEN ===
+unsigned int ecgTextureID = 0; // ID teksture za EKG liniju
+float ecgScrollOffset = 0.0f;  // Trenutni pomak X (za animaciju)
+float ecgTextureRepeat = 2.0f; // Faktor ponavljanja teksture (za BPM vizuelizaciju)
+extern float smoothedTextureRepeat = 2.0f; //Vrednost koja se koristi za crtanje
+int currentBPM = 70;           // Trenutna BPM vrednost
+double lastBPMUpdate = 0.0;    // Vreme poslednjeg ažuriranja BPM-a
+double lastRunnerUpdate = 0.0; // Vreme poslednjeg ažuriranja za trčanje
+bool isRunning = false;        // Da li je taster D pritisnut (Runner mod)
+
 int hours = 10;   // Početno vreme, npr. 10:30:00
 int minutes = 30;
 int seconds = 0;
@@ -309,17 +319,24 @@ int main()
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    // Omogući podršku za 2D teksture (potrebno za FreeType)
     glEnable(GL_TEXTURE_2D);
 
     rectShader = createShader("rect.vert", "rect.frag");
     colorShader = createShader("color.vert", "color.frag");
-
     textShader = createShader("text.vert", "text.frag");
 
     if (initTextRenderer(mode->width, mode->height) != 0)
         return endProgram("FreeType inicijalizacija nije uspela.");
+
+    // ⭐ Učitavanje EKG Teksture
+    ecgTextureID = loadImageToTexture("ecg_line.png"); // Pretpostavljamo da imate ecg_line.png
+    if (ecgTextureID == 0) {
+        std::cerr << "ERROR: Failed to load ECG texture." << std::endl;
+        // Opciono: učitati placeholder
+    }
+
+    // Seedovanje za random BPM
+    std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
     initQuad();
 
