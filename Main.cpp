@@ -71,9 +71,14 @@ int windowPosX = 100;
 int windowPosY = 100;
 unsigned int rectShader = 0;
 unsigned int colorShader = 0;
+unsigned int textureShader = 0;
 unsigned int quadVAO = 0;
 unsigned int quadVBO = 0;
+unsigned int signatureVAO = 0;
+unsigned int signatureVBO = 0;
 ScreenState currentScreen = TIME_SCREEN;
+
+unsigned int signatureTextureID = 0;
 
 // heartrate
 unsigned int ecgTextureID = 0; // ID teksture za EKG liniju
@@ -292,6 +297,89 @@ int endProgram(std::string message) {
     return -1;
 }
 
+void initSignatureQuad()
+{
+    // X, Y (Pozicija u NDC) i U, V (UV koordinate)
+    float vertices[] = {
+        // x     y   u   v
+        -1.0f, 1.0f, 0.0f, 1.0f, // Gore levo
+        -1.0f,-1.0f, 0.0f, 0.0f, // Dole levo
+         1.0f,-1.0f, 1.0f, 0.0f, // Dole desno
+
+        -1.0f, 1.0f, 0.0f, 1.0f, // Gore levo
+         1.0f,-1.0f, 1.0f, 0.0f, // Dole desno
+         1.0f, 1.0f, 1.0f, 1.0f  // Gore desno
+    };
+
+    int stride = 4 * sizeof(float); // 4 float-a (x, y, u, v) po verteksu
+
+    glGenVertexArrays(1, &signatureVAO);
+    glGenBuffers(1, &signatureVBO);
+
+    glBindVertexArray(signatureVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, signatureVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // 0. Pozicija (layout 0): 2 float-a, offset 0
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride, (void*)0);
+
+    // 1. UV koordinate (layout 1 u texture.vert): 2 float-a, offset 2*sizeof(float)
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(2 * sizeof(float)));
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
+void drawSignature()
+{
+    const float SIGNATURE_WIDTH = 0.25f;
+    const float SIGNATURE_HEIGHT = 0.10f;
+    const float DESIRED_ALPHA = 0.50f; // 75% opacity
+
+    const float PADDING = 0.01f;
+
+    // Pozicija X: -1.0 (leva ivica) + (širina/2) + razmak
+    float signX = -1.0f + SIGNATURE_WIDTH + PADDING; // Koristimo punu širinu/visinu jer je ovde NDC, a ne polu-dimenzija
+
+    // Y Pozicija: -1.0 (donja ivica) + (visina) + razmak
+    float signY = -1.0f + SIGNATURE_HEIGHT + PADDING;
+
+
+    if (signatureTextureID != 0) {
+
+        glUseProgram(textureShader);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, signatureTextureID);
+        glUniform1i(glGetUniformLocation(textureShader, "imageTexture"), 0);
+
+        // ⭐ SLANJE BOJE I ALPHA KANALA U SHADER (za 75% opacity)
+        glUniform4f(glGetUniformLocation(textureShader, "color"),
+            1.0f, 1.0f, 1.0f, DESIRED_ALPHA); // Bela boja * Alpha
+
+        // --- Crtanje ---
+        glBindVertexArray(signatureVAO);
+
+        // Premeštanje i skaliranje kvada u NDC
+        // Pozicija: (X, Y) je sada donji levi ugao!
+        float transform[16] = {
+            SIGNATURE_WIDTH, 0.0f, 0.0f, 0.0f,
+            0.0f, SIGNATURE_HEIGHT, 0.0f, 0.0f,
+            0.0f, 0.0f, 1.0f, 0.0f,
+            signX, signY, 0.0f, 1.0f
+        };
+        glUniformMatrix4fv(glGetUniformLocation(textureShader, "transform"), 1, GL_FALSE, transform);
+
+
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        glBindVertexArray(0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+}
+
 int main()
 {
     // GLFW init
@@ -331,21 +419,29 @@ int main()
     rectShader = createShader("rect.vert", "rect.frag");
     colorShader = createShader("color.vert", "color.frag");
     textShader = createShader("text.vert", "text.frag");
+    textureShader = createShader("texture.vert", "texture.frag");
 
     if (initTextRenderer(mode->width, mode->height) != 0)
         return endProgram("FreeType inicijalizacija nije uspela.");
 
-    // ⭐ Učitavanje EKG Teksture
+    // Učitavanje EKG Teksture
     ecgTextureID = loadImageToTexture("ecg_line.png"); // Pretpostavljamo da imate ecg_line.png
     if (ecgTextureID == 0) {
         std::cerr << "ERROR: Failed to load ECG texture." << std::endl;
         // Opciono: učitati placeholder
     }
 
+    // ucitavanje tektsure za potpis
+    signatureTextureID = loadImageToTexture("signature.png");
+    if (signatureTextureID == 0) {
+        std::cerr << "ERROR: Failed to load signature texture." << std::endl;
+    }
+
     // Seedovanje za random BPM
     std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
     initQuad();
+    initSignatureQuad();
 
     heartCursorDefault = loadImageToCursor("heart_default.png");
     heartCursorActive = loadImageToCursor("heart_active.png");
@@ -372,6 +468,8 @@ int main()
 
         glClear(GL_COLOR_BUFFER_BIT);
 
+        drawSignature();
+
         switch (currentScreen) {
         case TIME_SCREEN:
             drawTimeScreen(window);
@@ -394,6 +492,10 @@ int main()
     glDeleteVertexArrays(1, &quadVAO);
     glDeleteProgram(rectShader);
     glDeleteProgram(colorShader);
+    glDeleteTextures(1, &signatureTextureID);
+    glDeleteProgram(textureShader);
+    glDeleteBuffers(1, &signatureVBO);
+    glDeleteVertexArrays(1, &signatureVAO);
     if (heartCursorDefault) {
         glfwDestroyCursor(heartCursorDefault);
     }
