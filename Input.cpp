@@ -3,10 +3,6 @@
 #include <iostream>
 #include <string>
 
-// =========================================================
-// EXTERN DEKLARACIJE GLOBALNIH PROMENLJIVIH IZ main.cpp
-// =========================================================
-
 // Globalne promenljive za stanje
 enum ScreenState {
     TIME_SCREEN,
@@ -15,6 +11,9 @@ enum ScreenState {
 };
 extern ScreenState currentScreen;
 extern const float FRAME_SIZE_X;
+
+extern GLFWcursor* heartCursorDefault;
+extern GLFWcursor* heartCursorActive;
 
 // Globalne promenljive za fullscreen
 extern bool isFullscreen;
@@ -48,9 +47,6 @@ void toggleFullscreen(GLFWwindow* window)
     }
 }
 
-/**
- * Callback funkcija za obradu unosa sa tastature.
- */
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (action == GLFW_PRESS)
@@ -82,9 +78,6 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     }
 }
 
-/**
- * Pretvara koordinate kursora (pikseli) u NDC koordinate (-1.0 do 1.0).
- */
 void getCursorNDC(GLFWwindow* window, double xpos, double ypos, float& ndcX, float& ndcY)
 {
     int width, height;
@@ -98,11 +91,23 @@ void getCursorNDC(GLFWwindow* window, double xpos, double ypos, float& ndcX, flo
     ndcY = 1.0f - (float)(ypos / height) * 2.0f;
 }
 
-/**
- * Callback funkcija za obradu klika miša i promenu ekrana.
- */
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
+    if (button == GLFW_MOUSE_BUTTON_LEFT) {
+        if (action == GLFW_PRESS) {
+            // Postavi aktivni kursor
+            if (heartCursorActive) {
+                glfwSetCursor(window, heartCursorActive);
+            }
+        }
+        else if (action == GLFW_RELEASE) {
+            // Vrati na podrazumevani kursor
+            if (heartCursorDefault) {
+                glfwSetCursor(window, heartCursorDefault);
+            }
+        }
+    }
+
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
     {
         double xpos, ypos;

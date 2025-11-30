@@ -18,7 +18,7 @@ extern void renderText(std::string text, float x, float y, float scale, float r,
 
 void updateBattery(double currentTime) {
     // Provera da li je prošlo 10 sekundi od poslednjeg ažuriranja
-    if (currentTime - lastBatteryUpdate >= 0.2) {
+    if (currentTime - lastBatteryUpdate >= 10.0) {
         if (batteryLevel > 0) {
             // Smanji bateriju za 1%
             batteryLevel = std::max(0, batteryLevel - 1);

@@ -62,6 +62,8 @@ enum ScreenState {
 };
 
 // Global state
+GLFWcursor* heartCursorDefault = nullptr;
+GLFWcursor* heartCursorActive = nullptr;
 bool isFullscreen = true;
 int windowedWidth = 1280;
 int windowedHeight = 720;
@@ -345,6 +347,16 @@ int main()
 
     initQuad();
 
+    heartCursorDefault = loadImageToCursor("heart_default.png");
+    heartCursorActive = loadImageToCursor("heart_active.png");
+
+    if (heartCursorDefault) {
+        glfwSetCursor(window, heartCursorDefault);
+    }
+    else {
+        std::cerr << "Upozorenje: Koristim podrazumevani kursor." << std::endl;
+    }
+
     lastTimeUpdate = glfwGetTime();
     lastBatteryUpdate = glfwGetTime();
 
@@ -382,6 +394,12 @@ int main()
     glDeleteVertexArrays(1, &quadVAO);
     glDeleteProgram(rectShader);
     glDeleteProgram(colorShader);
+    if (heartCursorDefault) {
+        glfwDestroyCursor(heartCursorDefault);
+    }
+    if (heartCursorActive) {
+        glfwDestroyCursor(heartCursorActive);
+    }
     glfwDestroyWindow(window);
     glfwTerminate();
     return 0;
