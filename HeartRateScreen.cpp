@@ -20,6 +20,7 @@ extern int currentBPM;
 extern double lastBPMUpdate;
 extern double lastTimeUpdate;
 extern bool isRunning;
+extern double lastRunnerUpdate;
 
 extern void renderText(std::string text, float x, float y, float scale, float r, float g, float b, int windowHeight);
 
@@ -32,22 +33,33 @@ void drawTexturedQuad(float x, float y, float width, float height, unsigned int 
 
 void updateBPM(double currentTime) {
     if (isRunning) {
-        // Logika trčanja će se implementirati kasnije. Za sada samo inkrementiramo.
+        if (currentTime - lastRunnerUpdate >= 0.5) { // Povećava BPM svake 0.5 sekunde
+            if (currentBPM < 250) {
+                currentBPM = currentBPM + 3 + (std::rand() % 3); // Povecavamo BPM za 3 do 5
+            }
+            lastRunnerUpdate = currentTime;
+        }
+        // Osiguravamo da se BPM ne spušta ispod 80 dok se trči
+        currentBPM = std::max(80, currentBPM);
+
     }
     else if (currentTime - lastBPMUpdate >= 1.0) {
-        // 60 + (0 do 20) -> opseg [60, 80] za normalno stanje
-        currentBPM = 60 + (std::rand() % 21);
+        if (currentBPM > 80) {
+            // Ako je BPM bio visok (trčanje), polako ga spuštamo (oporavak)
+            // Spuštanje za 5 do 10
+            currentBPM = std::max(60, currentBPM - 5 - (std::rand() % 6));
+        }
+        else {
+            // Normalni opseg BPM [60, 80] za mirno stanje
+            currentBPM = 60 + (std::rand() % 21);
+        }
         lastBPMUpdate = currentTime;
     }
 }
 
 void drawECG() {
-    // 1. Ažuriranje Skrolovanja
-    // Brzina skrolovanja je fiksna, ali je stopa ponavljanja povezana sa BPM-om!
-    // Ako BPM raste, EKG se sužava (više otkucaja po širini).
-
     // Brzina horizontalne animacije
-    const float SCROLL_SPEED = 0.005f;
+    const float SCROLL_SPEED = 0.007f;
     ecgScrollOffset -= SCROLL_SPEED;
     if (ecgScrollOffset < -1.0f) {
         ecgScrollOffset += 1.0f;
@@ -57,8 +69,8 @@ void drawECG() {
     // Povezujemo ponavljanje sa BPM-om: što je veći BPM, veći je repeat faktor (sužava se graf)
     // Normalno: 70 BPM -> 2.0 repeat. Za 80 BPM, može biti 2.5, za 60 -> 1.5.
     // Linearna veza: (currentBPM - 60) * 0.05 + 1.5
-    ecgTextureRepeat = (currentBPM - 60.0f) * 0.05f + 1.5f;
-    ecgTextureRepeat = std::max(1.5f, ecgTextureRepeat); // Min ponavljanje 1.5
+    ecgTextureRepeat = (currentBPM - 60.0f) * 0.02f + 1.2f;
+    ecgTextureRepeat = std::max(1.2f, ecgTextureRepeat); // Min ponavljanje 1.5
 
     //za glatke tranzicije
     const float LERP_FACTOR = 0.01f;
@@ -127,4 +139,33 @@ void drawHeartRateScreen(GLFWwindow* window) {
         ARROW_WIDTH, ARROW_HEIGHT,
         0.0f, 0.0f, 0.0f, 1.0f
     );
+
+    if (currentBPM >= 200) {
+        int width, height;
+        glfwGetWindowSize(window, &width, &height);
+
+        std::string warningText = "STOP AND REST!";
+        float scale = 1.0f; // Veći font
+
+        // Crtanje crvenog kvadra preko cele površine ekrana sata
+        // Koristimo FRAME_SIZE_X i Y za dimenzije
+        drawQuad(
+            0.0f, 0.0f,
+            FRAME_SIZE_X * 0.95f, FRAME_SIZE_Y * 0.95f,
+            1.0f, 0.0f, 0.0f, 0.5f // Crvena boja, 70% transparentnost
+        );
+
+        // Gruba procena širine teksta za centriranje
+        // (Ovo je aproksimacija jer niste poslali funkciju za precizno merenje teksta)
+        float textWidthEstimate = 0.6f * (48.0f * scale) * warningText.length();
+        float fontSize = 48.0f * scale;
+
+        // X pozicija (Centrirano na ekranu prozora)
+        float posX = (width / 2.0f) - (textWidthEstimate / 2.0f);
+        // Y pozicija (Centrirano na ekranu prozora)
+        float posY = (height / 1.75f) + (fontSize / 2.0f);
+
+        // Crno upozorenje iznad crvene pozadine
+        renderText(warningText, posX, posY, scale, 0.0f, 0.0f, 0.0f, height);
+    }
 }

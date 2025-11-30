@@ -25,13 +25,9 @@ extern int windowPosY;
 extern GLFWmonitor* monitor;
 extern const GLFWvidmode* mode;
 
-// =========================================================
-// DEFINICIJE FUNKCIJA (Izvađene iz main.cpp)
-// =========================================================
+extern bool isRunning;
+extern int currentBPM;
 
-/**
- * Funkcija za prebacivanje između fullscreen i windowed režima.
- */
 void toggleFullscreen(GLFWwindow* window)
 {
     isFullscreen = !isFullscreen;
@@ -65,6 +61,23 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
         if (key == GLFW_KEY_F11) {
             toggleFullscreen(window);
+        }
+    }
+
+    if (key == GLFW_KEY_D)
+    {
+        if (action == GLFW_PRESS)
+        {
+            // Aktiviraj mod trčanja
+            isRunning = true;
+            if (currentBPM < 80) {
+                currentBPM = 80;
+            }
+        }
+        else if (action == GLFW_RELEASE)
+        {
+            // Deaktiviraj mod trčanja
+            isRunning = false;
         }
     }
 }
