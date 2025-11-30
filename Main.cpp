@@ -73,7 +73,7 @@ unsigned int quadVAO = 0;
 unsigned int quadVBO = 0;
 ScreenState currentScreen = TIME_SCREEN;
 
-// === NOVE VARIJABLE ZA HEART RATE SCREEN ===
+// heartrate
 unsigned int ecgTextureID = 0; // ID teksture za EKG liniju
 float ecgScrollOffset = 0.0f;  // Trenutni pomak X (za animaciju)
 float ecgTextureRepeat = 2.0f; // Faktor ponavljanja teksture (za BPM vizuelizaciju)
@@ -83,6 +83,11 @@ double lastBPMUpdate = 0.0;    // Vreme poslednjeg ažuriranja BPM-a
 double lastRunnerUpdate = 0.0; // Vreme poslednjeg ažuriranja za trčanje
 bool isRunning = false;        // Da li je taster D pritisnut (Runner mod)
 
+// battery
+int batteryLevel = 100;         // Procenat baterije (100% na pocetku)
+double lastBatteryUpdate = 0.0; // Vreme poslednjeg pražnjenja baterije
+
+// time
 int hours = 10;   // Početno vreme, npr. 10:30:00
 int minutes = 30;
 int seconds = 0;
@@ -341,6 +346,7 @@ int main()
     initQuad();
 
     lastTimeUpdate = glfwGetTime();
+    lastBatteryUpdate = glfwGetTime();
 
     glClearColor(0.5f, 0.6f, 1.0f, 1.0f);
 
