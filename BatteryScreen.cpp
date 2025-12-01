@@ -28,8 +28,6 @@ void updateBattery(double currentTime) {
 }
 
 void drawBatteryScreen(GLFWwindow* window) {
-    updateBattery(glfwGetTime());
-
     drawWatchFrame();
 
     const float BATT_WIDTH = FRAME_SIZE_X * 0.6f;   // Široka baterija

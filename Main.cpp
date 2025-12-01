@@ -32,6 +32,7 @@ void drawHeartRateScreen(GLFWwindow* window);
 
 // Prototipovi iz BatteryScreen.cpp
 void drawBatteryScreen(GLFWwindow* window);
+void updateBattery(double currentTime);
 
 //Freetype globals
 unsigned int textShader = 0;
@@ -465,6 +466,7 @@ int main()
 
         // Ažuriranje stanja (Logika)
         updateTime(currentTime);
+        updateBattery(currentTime);
 
         glClear(GL_COLOR_BUFFER_BIT);
 

@@ -1,30 +1,29 @@
-# NuGet/Package Manager Files
-packages/
-*.nupkg
-
-# The rest of your Visual Studio ignores...
-.vs/
-*.sln
-# ...
-
-# Visual Studio files
-.vs/
-*.sln
-*.suo
-*.user
-*.ncb
-*.aps
-*.pdb
-*.obj
-*.exe
-*.dll
-*.lib
-
-# Folders created by the build process
+# Direktorijumi koje generiše Visual Studio / Build
 [Dd]ebug/
 [Rr]elease/
 [B]in/
 [I]nt/
-*.vcxproj
-*.filters
-*.user
+.vs/                   # Direktorijum za Visual Studio 2017+ (lokalni podaci)
+
+# Privremeni fajlovi i keš
+*.obj
+*.pdb
+*.log
+*.ilk
+*.cache
+*.temp
+
+# Izvršni fajlovi i biblioteke
+*.exe
+*.dll
+*.lib
+
+# Fajlovi korisničkih/lokalnih podešavanja (specificni za računar/korisnika)
+*.user             # Korisnička podešavanja projekta
+*.suo              # Stari Visual Studio Solution User Options
+*.ncb
+*.aps
+
+# NuGet / Package Manager fajlovi
+packages/
+*.nupkg
