@@ -27,26 +27,28 @@ extern const GLFWvidmode* mode;
 extern bool isRunning;
 extern int currentBPM;
 
+//za prebacivanje iz fullscreen u windowed
 void toggleFullscreen(GLFWwindow* window)
 {
     isFullscreen = !isFullscreen;
 
     if (isFullscreen)
     {
-        // Save windowed position & size
+        // cuvamo poziciju windowed
         glfwGetWindowPos(window, &windowPosX, &windowPosY);
         glfwGetWindowSize(window, &windowedWidth, &windowedHeight);
 
-        // Switch to fullscreen
+        // u fullscreen
         glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
     }
     else
     {
-        // Switch to windowed
+        // u windowed
         glfwSetWindowMonitor(window, NULL, windowPosX, windowPosY, windowedWidth, windowedHeight, 0);
     }
 }
 
+//za unos sa tastature
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (action == GLFW_PRESS)
@@ -64,7 +66,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     {
         if (action == GLFW_PRESS)
         {
-            // Aktiviraj mod trčanja
+            // aktiviraj mod trčanja
             isRunning = true;
             if (currentBPM < 80) {
                 currentBPM = 80;
@@ -72,42 +74,42 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         }
         else if (action == GLFW_RELEASE)
         {
-            // Deaktiviraj mod trčanja
+            // deaktiviraj mod trčanja
             isRunning = false;
         }
     }
 }
 
+//pomocna funkcija za transformisanje lokacije kursora iz piksela u -1, 1 koordinate
 void getCursorNDC(GLFWwindow* window, double xpos, double ypos, float& ndcX, float& ndcY)
 {
     int width, height;
     glfwGetWindowSize(window, &width, &height);
 
-    // X: (x_piksela / width) * 2 - 1
     ndcX = (float)(xpos / width) * 2.0f - 1.0f;
 
-    // Y: 1 - (y_piksela / height) * 2
-    // Ekran koordinate idu od gore (0) dole (max), NDC idu od dole (-1) gore (1)
     ndcY = 1.0f - (float)(ypos / height) * 2.0f;
 }
 
+//za unos sa misa
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
     if (button == GLFW_MOUSE_BUTTON_LEFT) {
         if (action == GLFW_PRESS) {
-            // Postavi aktivni kursor
+            // postavi teksturu za pritisnuti kursor
             if (heartCursorActive) {
                 glfwSetCursor(window, heartCursorActive);
             }
         }
         else if (action == GLFW_RELEASE) {
-            // Vrati na podrazumevani kursor
+            // vrati na podrazumevani kursor
             if (heartCursorDefault) {
                 glfwSetCursor(window, heartCursorDefault);
             }
         }
     }
 
+    //za navigaciju kroz ekrane
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
     {
         double xpos, ypos;
@@ -116,28 +118,28 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         float ndcX, ndcY;
         getCursorNDC(window, xpos, ypos, ndcX, ndcY);
 
-        // Zajedničke granice strelice (NDC centar je (0,0))
+        // zajednicke granice strelice
         const float ARROW_WIDTH = 0.03f;
         const float ARROW_HEIGHT = 0.04f;
         const float ARROW_Y_MIN = 0.0f - ARROW_HEIGHT;
         const float ARROW_Y_MAX = 0.0f + ARROW_HEIGHT;
 
-        // Desna strelica pozicija
+        //pozicija desne strelice
         const float ARROW_POS_X_R = FRAME_SIZE_X - 0.08f;
         const float ARROW_X_MIN_R = ARROW_POS_X_R - ARROW_WIDTH;
         const float ARROW_X_MAX_R = ARROW_POS_X_R + ARROW_WIDTH;
 
-        // Leva strelica pozicija
+        //pozicija leve strelice
         const float ARROW_POS_X_L = -FRAME_SIZE_X + 0.08f;
         const float ARROW_X_MIN_L = ARROW_POS_X_L - ARROW_WIDTH;
         const float ARROW_X_MAX_L = ARROW_POS_X_L + ARROW_WIDTH;
 
-        // Provera sudara i prebacivanje ekrana
-        if (ndcY >= ARROW_Y_MIN && ndcY <= ARROW_Y_MAX) // Samo proveri da li je Y u zoni strelica
+        //provera sudara i prebacivanje ekrana
+        if (ndcY >= ARROW_Y_MIN && ndcY <= ARROW_Y_MAX)
         {
             switch (currentScreen) {
             case TIME_SCREEN:
-                // Strelica za desno (TIME -> HEART_RATE)
+                //desno (TIME -> HEART_RATE)
                 if (ndcX >= ARROW_X_MIN_R && ndcX <= ARROW_X_MAX_R)
                 {
                     currentScreen = HEART_RATE_SCREEN;
@@ -146,13 +148,13 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
                 break;
 
             case HEART_RATE_SCREEN:
-                // Strelica za desno (HEART_RATE -> BATTERY)
+                //desno (HEART_RATE -> BATTERY)
                 if (ndcX >= ARROW_X_MIN_R && ndcX <= ARROW_X_MAX_R)
                 {
                     currentScreen = BATTERY_SCREEN;
                     std::cout << ">>> Prebacivanje na: BATTERY_SCREEN" << std::endl;
                 }
-                // Strelica za levo (HEART_RATE -> TIME)
+                //levo (HEART_RATE -> TIME)
                 else if (ndcX >= ARROW_X_MIN_L && ndcX <= ARROW_X_MAX_L)
                 {
                     currentScreen = TIME_SCREEN;
@@ -161,7 +163,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
                 break;
 
             case BATTERY_SCREEN:
-                // Strelica za levo (BATTERY -> HEART_RATE)
+                //levo (BATTERY -> HEART_RATE)
                 if (ndcX >= ARROW_X_MIN_L && ndcX <= ARROW_X_MAX_L)
                 {
                     currentScreen = HEART_RATE_SCREEN;

@@ -9,6 +9,7 @@
 #include "Util.h"
 #include <map>
 #include <ft2build.h>
+#include <ctime>
 #include FT_FREETYPE_H
 
 //deklaracije iz input.cpp(za upravljanje logikom sa tastature i misa)
@@ -38,31 +39,25 @@ void updateBattery(double currentTime);
 unsigned int textShader = 0;
 // Map za skladištenje karaktera (glifova)
 struct Character {
-    unsigned int TextureID; // ID teksture glifa
-    // dimenzije glifa
+    unsigned int TextureID;
     int Width;
     int Height;
-    // pomak sa bazne linije
     int BearingX;
     int BearingY;
-    // pomak na sledeći glif
     long Advance;
 };
 
 std::map<char, Character> Characters;
 
-// Globalni VAO/VBO za tekst
 unsigned int textVAO = 0;
 unsigned int textVBO = 0;
 
-// Dodajemo enum za stanje ekrana (prikaz)
 enum ScreenState {
     TIME_SCREEN,
     HEART_RATE_SCREEN,
     BATTERY_SCREEN
 };
 
-// Global state
 GLFWcursor* heartCursorDefault = nullptr;
 GLFWcursor* heartCursorActive = nullptr;
 bool isFullscreen = true;
@@ -81,28 +76,27 @@ ScreenState currentScreen = TIME_SCREEN;
 
 unsigned int signatureTextureID = 0;
 
-// heartrate
-unsigned int ecgTextureID = 0; // ID teksture za EKG liniju
-float ecgScrollOffset = 0.0f;  // Trenutni pomak X (za animaciju)
-float ecgTextureRepeat = 2.0f; // Faktor ponavljanja teksture (za BPM vizuelizaciju)
-extern float smoothedTextureRepeat = 2.0f; //Vrednost koja se koristi za crtanje
-int currentBPM = 70;           // Trenutna BPM vrednost
-double lastBPMUpdate = 0.0;    // Vreme poslednjeg ažuriranja BPM-a
-double lastRunnerUpdate = 0.0; // Vreme poslednjeg ažuriranja za trčanje
-bool isRunning = false;        // Da li je taster D pritisnut (Runner mod)
+// za heartrate
+unsigned int ecgTextureID = 0;
+float ecgScrollOffset = 0.0f;
+float ecgTextureRepeat = 2.0f;
+extern float smoothedTextureRepeat = 2.0f;
+int currentBPM = 70;
+double lastBPMUpdate = 0.0;
+double lastRunnerUpdate = 0.0;
+bool isRunning = false;
 
-// battery
-int batteryLevel = 100;         // Procenat baterije (100% na pocetku)
-double lastBatteryUpdate = 0.0; // Vreme poslednjeg pražnjenja baterije
+// za bateriju
+int batteryLevel = 100;
+double lastBatteryUpdate = 0.0;
 
-// time
-int hours = 10;   // Početno vreme, npr. 10:30:00
+int hours = 10;
 int minutes = 30;
 int seconds = 0;
 double lastTimeUpdate = 0.0;
 
-extern const float FRAME_SIZE_X = 0.35f; // Polu-širina ekrana sata
-extern const float FRAME_SIZE_Y = 0.40f; // Polu-visina ekrana sata
+extern const float FRAME_SIZE_X = 0.35f;
+extern const float FRAME_SIZE_Y = 0.40f;
 
 GLFWmonitor* monitor;
 const GLFWvidmode* mode;
@@ -116,7 +110,6 @@ int initTextRenderer(int windowWidth, int windowHeight) {
         return -1;
     }
 
-    // Učitaj font, npr. Arial.ttf. Mora postojati u folderu!
     FT_Face face;
     if (FT_New_Face(ft, "arial.ttf", 0, &face))
     {
@@ -125,13 +118,10 @@ int initTextRenderer(int windowWidth, int windowHeight) {
         return -1;
     }
 
-    // Postavljanje veličine fonta (širina, visina)
-    // 0 za širinu znači da će širina biti dinamički određena. 
-    FT_Set_Pixel_Sizes(face, 0, 48); // Visina 48 piksela
+    FT_Set_Pixel_Sizes(face, 0, 48);
 
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // onemogući poravnanje bajtova
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-    // Učitavanje prvih 128 ASCII karaktera
     for (unsigned char c = 0; c < 128; c++)
     {
         // Učitavanje glifa
@@ -148,7 +138,7 @@ int initTextRenderer(int windowWidth, int windowHeight) {
         glTexImage2D(
             GL_TEXTURE_2D,
             0,
-            GL_RED, // Jednobojni glif (samo crvena komponenta se koristi za alfa)
+            GL_RED,
             face->glyph->bitmap.width,
             face->glyph->bitmap.rows,
             0,
@@ -175,7 +165,6 @@ int initTextRenderer(int windowWidth, int windowHeight) {
         Characters.insert(std::pair<char, Character>(c, character));
     }
 
-    // Čišćenje FreeType resursa
     FT_Done_Face(face);
     FT_Done_FreeType(ft);
 
@@ -185,13 +174,13 @@ int initTextRenderer(int windowWidth, int windowHeight) {
     glGenBuffers(1, &textVBO);
     glBindVertexArray(textVAO);
     glBindBuffer(GL_ARRAY_BUFFER, textVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW); // 6 verteksa * 4 float (x,y,u,v)
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    return 0; // Uspešno inicijalizovano
+    return 0;
 }
 
 void renderText(std::string text, float x, float y, float scale, float r, float g, float b, int windowHeight)
@@ -271,10 +260,11 @@ void renderText(std::string text, float x, float y, float scale, float r, float 
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+// logika izmene vremena
 void updateTime(double currentTime) {
-    if (currentTime - lastTimeUpdate >= 1.0) { // Prošlo je 1.0 sekunda
+    if (currentTime - lastTimeUpdate >= 1.0) {
         seconds++;
-        lastTimeUpdate = currentTime; // Resetovanje brojača
+        lastTimeUpdate = currentTime;
 
         if (seconds >= 60) {
             seconds = 0;
@@ -285,7 +275,7 @@ void updateTime(double currentTime) {
                 hours++;
 
                 if (hours >= 24) {
-                    hours = 0; // Reset na 00:00:00
+                    hours = 0;
                 }
             }
         }
@@ -300,19 +290,17 @@ int endProgram(std::string message) {
 
 void initSignatureQuad()
 {
-    // X, Y (Pozicija u NDC) i U, V (UV koordinate)
     float vertices[] = {
-        // x     y   u   v
-        -1.0f, 1.0f, 0.0f, 1.0f, // Gore levo
-        -1.0f,-1.0f, 0.0f, 0.0f, // Dole levo
-         1.0f,-1.0f, 1.0f, 0.0f, // Dole desno
+        -1.0f, 1.0f, 0.0f, 1.0f,
+        -1.0f,-1.0f, 0.0f, 0.0f,
+         1.0f,-1.0f, 1.0f, 0.0f,
 
-        -1.0f, 1.0f, 0.0f, 1.0f, // Gore levo
-         1.0f,-1.0f, 1.0f, 0.0f, // Dole desno
-         1.0f, 1.0f, 1.0f, 1.0f  // Gore desno
+        -1.0f, 1.0f, 0.0f, 1.0f,
+         1.0f,-1.0f, 1.0f, 0.0f,
+         1.0f, 1.0f, 1.0f, 1.0f
     };
 
-    int stride = 4 * sizeof(float); // 4 float-a (x, y, u, v) po verteksu
+    int stride = 4 * sizeof(float);
 
     glGenVertexArrays(1, &signatureVAO);
     glGenBuffers(1, &signatureVBO);
@@ -321,11 +309,9 @@ void initSignatureQuad()
     glBindBuffer(GL_ARRAY_BUFFER, signatureVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    // 0. Pozicija (layout 0): 2 float-a, offset 0
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride, (void*)0);
 
-    // 1. UV koordinate (layout 1 u texture.vert): 2 float-a, offset 2*sizeof(float)
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(2 * sizeof(float)));
 
@@ -333,18 +319,16 @@ void initSignatureQuad()
     glBindVertexArray(0);
 }
 
+// iscrtavanje potpisa
 void drawSignature()
 {
     const float SIGNATURE_WIDTH = 0.25f;
     const float SIGNATURE_HEIGHT = 0.10f;
-    const float DESIRED_ALPHA = 0.50f; // 75% opacity
+    const float DESIRED_ALPHA = 0.50f;
 
     const float PADDING = 0.01f;
 
-    // Pozicija X: -1.0 (leva ivica) + (širina/2) + razmak
-    float signX = -1.0f + SIGNATURE_WIDTH + PADDING; // Koristimo punu širinu/visinu jer je ovde NDC, a ne polu-dimenzija
-
-    // Y Pozicija: -1.0 (donja ivica) + (visina) + razmak
+    float signX = -1.0f + SIGNATURE_WIDTH + PADDING;
     float signY = -1.0f + SIGNATURE_HEIGHT + PADDING;
 
 
@@ -356,15 +340,11 @@ void drawSignature()
         glBindTexture(GL_TEXTURE_2D, signatureTextureID);
         glUniform1i(glGetUniformLocation(textureShader, "imageTexture"), 0);
 
-        // ⭐ SLANJE BOJE I ALPHA KANALA U SHADER (za 75% opacity)
         glUniform4f(glGetUniformLocation(textureShader, "color"),
-            1.0f, 1.0f, 1.0f, DESIRED_ALPHA); // Bela boja * Alpha
+            1.0f, 1.0f, 1.0f, DESIRED_ALPHA);
 
-        // --- Crtanje ---
         glBindVertexArray(signatureVAO);
 
-        // Premeštanje i skaliranje kvada u NDC
-        // Pozicija: (X, Y) je sada donji levi ugao!
         float transform[16] = {
             SIGNATURE_WIDTH, 0.0f, 0.0f, 0.0f,
             0.0f, SIGNATURE_HEIGHT, 0.0f, 0.0f,
@@ -383,17 +363,15 @@ void drawSignature()
 
 int main()
 {
-    // GLFW init
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    // Get monitor info
+    //informacije o monitoru
     monitor = glfwGetPrimaryMonitor();
     mode = glfwGetVideoMode(monitor);
 
-    // Create fullscreen window
     GLFWwindow* window = glfwCreateWindow(
         mode->width,
         mode->height,
@@ -409,7 +387,6 @@ int main()
     glfwSetKeyCallback(window, key_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
 
-    // GLEW init
     if (glewInit() != GLEW_OK)
         return endProgram("GLEW nije uspeo da se inicijalizuje.");
 
@@ -425,11 +402,10 @@ int main()
     if (initTextRenderer(mode->width, mode->height) != 0)
         return endProgram("FreeType inicijalizacija nije uspela.");
 
-    // Učitavanje EKG Teksture
-    ecgTextureID = loadImageToTexture("ecg_line.png"); // Pretpostavljamo da imate ecg_line.png
+    // ucitavanje EKG teksture
+    ecgTextureID = loadImageToTexture("ecg_line.png");
     if (ecgTextureID == 0) {
         std::cerr << "ERROR: Failed to load ECG texture." << std::endl;
-        // Opciono: učitati placeholder
     }
 
     // ucitavanje tektsure za potpis
@@ -438,7 +414,7 @@ int main()
         std::cerr << "ERROR: Failed to load signature texture." << std::endl;
     }
 
-    // Seedovanje za random BPM
+    // za random BPM
     std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
     initQuad();
@@ -459,12 +435,27 @@ int main()
 
     glClearColor(0.5f, 0.6f, 1.0f, 1.0f);
 
+    std::time_t now = std::time(0); // Dohvatanje trenutnog sistemskog vremena
+    std::tm ltm_struct;
+
+    // obavezna provera
+    if (localtime_s(&ltm_struct, &now) == 0)
+    {
+        hours = ltm_struct.tm_hour;
+        minutes = ltm_struct.tm_min;
+        seconds = ltm_struct.tm_sec;
+    }
+    else
+    {
+        std::cerr << "Upozorenje: localtime_s nije uspeo da dohvati vreme. Koristi se podrazumevano vreme." << std::endl;
+    }
+
     // MAIN LOOP
     while (!glfwWindowShouldClose(window))
     {
         double currentTime = glfwGetTime();
 
-        // Ažuriranje stanja (Logika)
+        // azuriranje stanja
         updateTime(currentTime);
         updateBattery(currentTime);
 
